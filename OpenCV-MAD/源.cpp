@@ -4,7 +4,6 @@
 #include "highgui.h"  
 using namespace std;
 
-double MyminValue;
 
 CvPoint getNextMinLoc(IplImage *result, CvPoint minLoc, int maxVaule, int templatW, int templatH)
 {
@@ -41,7 +40,7 @@ CvPoint getNextMinLoc(IplImage *result, CvPoint minLoc, int maxVaule, int templa
 	// 然后得到下一个最小值并且返回  
 	double new_minVaule, new_maxValue;
 	CvPoint new_minLoc, new_maxLoc;
-	cvMinMaxLoc(result, &MyminValue, &new_maxValue, &new_minLoc, &new_maxLoc);
+	cvMinMaxLoc(result, &new_minVaule, &new_maxValue, &new_minLoc, &new_maxLoc);
 	return new_minLoc;
 
 }
