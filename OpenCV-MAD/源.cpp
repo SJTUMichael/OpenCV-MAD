@@ -1,99 +1,54 @@
-#include <iostream>  
-#include "cv.h"  
-#include "cxcore.h"  
-#include "highgui.h"  
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <iostream>
+#include <vector>
+#include <stdio.h>
+#include <windows.h>
+
 using namespace std;
+using namespace cv;
 
-
-CvPoint getNextMinLoc(IplImage *result, CvPoint minLoc, int maxVaule, int templatW, int templatH)
-{
-
-	// 先将第一个最小值点附近两倍模板宽度和高度的都设置为最大值防止产生干扰  
-	int startX = minLoc.x - templatW;
-	int startY = minLoc.y - templatH;
-	int endX = minLoc.x + templatW;
-	int endY = minLoc.y + templatH;
-	if (startX < 0)
-	{
-		startX = 0;
-	}
-	if (startY < 0)
-	{
-		startY = 0;
-	}
-	if (endX > result->width - 1)
-	{
-		endX = result->width - 1;
-	}
-	if (endY > result->height - 1)
-	{
-		endY = result->height - 1;
-	}
-	int y, x;
-	for (y = startY; y <= endY; y++)
-	{
-		for (x = startX; x <= endX; x++)
-		{
-			cvSetReal2D(result, y, x, maxVaule);
-		}
-	}
-	// 然后得到下一个最小值并且返回  
-	double new_minVaule, new_maxValue;
-	CvPoint new_minLoc, new_maxLoc;
-	cvMinMaxLoc(result, &new_minVaule, &new_maxValue, &new_minLoc, &new_maxLoc);
-	return new_minLoc;
-
-}
 int main()
 {
-	IplImage *src = cvLoadImage("原图像.png", 0);
-	IplImage *srcResult = cvLoadImage("原图像.png", 3);  //用来显示  
-	IplImage *templat = cvLoadImage("模板.png", 0);
-	IplImage *result;  // 用来存放结果  
-	if (!src || !templat)
-	{
-		cout << "打开图片失败" << endl;
-		return 0;
-	}
-	int srcW, srcH, templatW, templatH, resultH, resultW;
-	srcW = src->width;
-	srcH = src->height;
-	templatW = templat->width;
-	templatH = templat->height;
-	if (srcW < templatW || srcH < templatH)
-	{
-		cout << "模板不能比原图小" << endl;
-		return 0;
-	}
-	resultW = srcW - templatW + 1;
-	resultH = srcH - templatH + 1;
-	result = cvCreateImage(cvSize(resultW, resultH), 32, 1);    //  匹配方法计算的结果最小值为float  
-	cvMatchTemplate(src, templat, result, CV_TM_SQDIFF);
-	double minValue, maxValue;
-	CvPoint minLoc, maxLoc;
-	cvMinMaxLoc(result, &minValue, &maxValue, &minLoc, &maxLoc);
-	cvRectangle(srcResult, minLoc, cvPoint(minLoc.x + templatW, minLoc.y + templatH), cvScalar(0, 0, 255));
-	CvPoint new_minLoc;
+	Mat templat, src; // result用来存放结果，src为原图像
+	char filename[100];
 
-	// 计算下一个最小值  
-	new_minLoc = getNextMinLoc(result, minLoc, maxValue, templatW, templatH);
-	while (cvGetReal2D(result, new_minLoc.y, new_minLoc.x) < 0.8*minValue + 0.2*maxValue)
-	//for(int i = 5; i>0 ;i--)
+	templat = imread("C:\\Users\\Mark\\Desktop\\测试素材\\data1\\mold\\mold.png", 0);
+
+
+	for (unsigned int i = 0; i <= 7; ++i)
 	{
-		cout << new_minLoc.x << " , " << new_minLoc.y << endl;
-		cvRectangle(srcResult, new_minLoc, cvPoint(new_minLoc.x + templatW, new_minLoc.y + templatH), cvScalar(0, 0, 255));
-		new_minLoc = getNextMinLoc(result, new_minLoc, maxValue, templatW, templatH);
+		sprintf(filename, "C:\\Users\\Mark\\Desktop\\测试素材\\data1\\矩\\%d.png", i);//"C:\\Users\\Mark\\Desktop\\原图像.png"
+		src = imread(filename, IMREAD_GRAYSCALE);
+
+		if (src.empty() || templat.empty())
+		{
+			cout << "打开图片失败" << endl;
+			cvWaitKey(0);
+			return 0;
+		}
+
+
+		//  利用OpenCV函数求7个Hu矩
+		CvMoments moment;
+		CvHuMoments hu;
+		moment = moments(src, 0);
+		cvGetHuMoments(&moment, &hu);
+		//cout << hu.hu1 << "/" << hu.hu2 << "/" << hu.hu3 << "/" << hu.hu4 << "/" << hu.hu5 << "/" << hu.hu6 << "/" << hu.hu7 << "/" << "/" << endl;
+		float I1 = hu.hu2 / (hu.hu1*hu.hu1);
+		float I2 = hu.hu3 / (hu.hu1*hu.hu1*hu.hu1);
+		float I3 = hu.hu4 / (hu.hu1*hu.hu1*hu.hu1*hu.hu1);
+		float I4 = hu.hu5 / (hu.hu1*hu.hu1*hu.hu1*hu.hu1*hu.hu1);
+		float I5 = hu.hu6 / (hu.hu1*hu.hu1*hu.hu1*hu.hu1*hu.hu1*hu.hu1);
+		float I6 = hu.hu7 / (hu.hu1*hu.hu1*hu.hu1*hu.hu1*hu.hu1*hu.hu1*hu.hu1);
+
+		cout << I1 << "/" << I2 << "/" << I3 << "/" << I4 << "/" << I5 << "/" << I6 << "/"  << "/" << endl;
+		//rectangle(templat, Point(meanX - tempW/2, meanY - tempH/2), Point(meanX + tempW / 2, meanY + tempH / 2), cvScalar(0, 0, 255));
+		//imshow("result", templat);
+		cvWaitKey(0);
+
 	}
 
-	//cvRectangle(srcResult, new_minLoc, cvPoint(new_minLoc.x + templatW, new_minLoc.y + templatH), cvScalar(0, 0, 255));
-	cvNamedWindow("srcResult", 0);
-	cvNamedWindow("template", 0);
-	cvShowImage("srcResult", srcResult);
-	cvShowImage("template", templat);
-	cvWaitKey(0);
-	cvReleaseImage(&result);
-	cvReleaseImage(&templat);
-	cvReleaseImage(&srcResult);
-	cvReleaseImage(&src);
 	return 0;
 }
